@@ -14,7 +14,7 @@ async def main(page:flet.Page):
 
 if __name__ == "__main__":
     #flet_path = os.getenv("FLET_PATH", DEFAULT_FLET_PATH)
-    flet_path ='/sistema_exemplo'
+    flet_path ='/sistema_exemplo_manicure'
     # flet_port = int(os.getenv("FLET_PORT", DEFAULT_FLET_PORT))
     # ft.app(name=flet_path, target=main, view=None, port=flet_port)    
     flet.app(target=main, assets_dir="assets", port=8080, view=flet.AppView.WEB_BROWSER, name=flet_path)

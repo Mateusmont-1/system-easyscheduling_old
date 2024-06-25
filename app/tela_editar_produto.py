@@ -257,17 +257,13 @@ async def main(page:flet.page, user, id_produto):
                     ).replace(',', ".")
                 )
             checkbox_venda = _sign_in_._checkbox.content.controls[0].value
-            
-            print(checkbox_venda)
-            
+
             editar_produto = register_product.UpdateProduct(nome, preco, checkbox_venda, id_produto)
             confirma = editar_produto.atualizar_produto()
             if confirma:
                 texto = "Produto atualizado!"
                 await tela_transicao.main(page, user, texto)
-                print('Cadastrado')
             else:
-                print('Não foi cadastrado')
                 nome = _sign_in_.controls[0].controls[3].controls[0].content
                 nome.error_text = "Este serviço já existe!"
                 nome.update()
@@ -294,9 +290,6 @@ async def main(page:flet.page, user, id_produto):
         preco.update()
         
         return True if verificar == 0 else None
-            
-        # except:
-        #     print("Email ou senha errada!")
 
     def converte_float(s):
         try:

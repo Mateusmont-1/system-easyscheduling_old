@@ -249,8 +249,6 @@ async def main(page:flet.page, user):
                 )
             checkbox_venda = _sign_in_._checkbox.content.controls[0].value
             
-            print(checkbox_venda)
-            
             cadastra_produto = register_product.Product(nome, preco, checkbox_venda)
             confirma = cadastra_produto.criar_produto()
             if confirma:
@@ -258,7 +256,6 @@ async def main(page:flet.page, user):
                 await tela_transicao.main(page, user, texto)
                 # print('Cadastrado')
             else:
-                print('Não foi cadastrado')
                 nome = _sign_in_.controls[0].controls[3].controls[0].content
                 nome.error_text = "Este serviço já existe!"
                 nome.update()

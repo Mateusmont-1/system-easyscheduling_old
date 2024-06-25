@@ -247,7 +247,6 @@ async def main(page:flet.page, user, agendamento_id):
     # page.vertical_alignment = "center"
     # page.theme_mode = "dark"
     page.clean()
-    print(agendamento_id)
     atendentes_disponivel = dict()
     horario_disponivel = list()
     agendamento_data = dict()

@@ -323,11 +323,6 @@ async def main(page:flet.page, user, ano_despesa, mes_despesa, id_despesa):
             id_category = _sign_in_._category_expense.content.value
             name_category = _sign_in_.category_dict[id_category]['nome']
             
-            # print(descricao)
-            # print(preco)
-            # print(name_category)
-            # print(id_category)
-            
             registra_despesa = register_expenses.UpdateExpense(id_despesa,
                                                                mes_despesa,
                                                                ano_despesa,
@@ -341,7 +336,6 @@ async def main(page:flet.page, user, ano_despesa, mes_despesa, id_despesa):
             if confirma:
                 texto = "Despesa atualizada!"
                 await tela_transicao.main(page, user, texto)
-                # print('Cadastrado')
             else:
                 print('Não foi cadastrado')
 

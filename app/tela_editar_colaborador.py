@@ -496,38 +496,6 @@ async def main(page:flet.page, user, id_colaborador):
             verifica += validate_time_field(saturday_end_time)
             verifica += validate_time_field(sunday_start_time)
             verifica += validate_time_field(sunday_end_time)
-            # # Verificação se os hórarios estão preenchidos
-            # if workday_start_time.value == "":
-            #     verifica += 1
-            # # Verifica se o valor presente não é um digito
-            # elif not workday_start_time.value.isdigit():
-            #     verifica += 1
-                
-            # if workday_end_time.value == "":
-            #     verifica += 1
-            # elif not workday_end_time.value.isdigit():
-            #     verifica += 1
-                
-            # if saturday_start_time.value == "":
-            #     verifica += 1
-            # elif not saturday_start_time.value.isdigit():
-            #     verifica += 1
-                
-            # if saturday_end_time.value == "":
-            #     verifica += 1
-            # elif not saturday_end_time.value.isdigit():
-            #     verifica += 1
-                
-            # if sunday_start_time.value == "":
-            #     verifica += 1
-            # elif not sunday_start_time.value.isdigit():
-            #     verifica += 1
-                
-            # if sunday_end_time.value == "":
-            #     verifica += 1
-            # elif not sunday_end_time.value.isdigit():
-            #     verifica += 1
-            # # print(verifica)
         
         return True if verifica == 0 else None
     
