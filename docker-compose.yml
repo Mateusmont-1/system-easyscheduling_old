@@ -5,10 +5,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: sistema_exemplo
+    container_name: sistema_exemplo_manicure
     restart: always
     ports:
-      - "8081:8080"
+      - "8082:8080"
     volumes:  # Adicionado para montar a pasta logs
       - ./logs:/app/logs
     networks:
