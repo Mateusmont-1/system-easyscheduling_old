@@ -265,7 +265,7 @@ async def main(page:flet.page, user):
     # page.theme_mode = "dark"
     page.clean()
     
-    colaborador_disponivel = dict()
+    colaboradores_disponivel = dict()
     horario_disponivel = list()
     
     db = get_firestore_client()
@@ -370,12 +370,12 @@ async def main(page:flet.page, user):
                 inicio_servico = string_to_time(hora)
                 fim_servico = inicio_servico + duracao_servico
                 if periodo_disponivel(inicio_servico, fim_servico, agendamentos.get(id, [])):
-                    if id not in colaborador_disponivel:
-                        colaborador_disponivel[id] = {
+                    if id not in colaboradores_disponivel:
+                        colaboradores_disponivel[id] = {
                             "nome": dados["nome"],
                             "horarios_disponivel": []
                         }
-                    colaborador_disponivel[id]["horarios_disponivel"].append(hora)
+                    colaboradores_disponivel[id]["horarios_disponivel"].append(hora)
                     if hora not in horario_disponivel:
                         horario_disponivel.append(hora)
                         horario_disponivel.sort()
@@ -400,7 +400,7 @@ async def main(page:flet.page, user):
         hora_atual_old = datetime.datetime.now()
         hora_atual = hora_atual_old.strftime('%H:%M')
         
-        colaborador_disponivel.clear()
+        colaboradores_disponivel.clear()
         horario_disponivel.clear()
 
         # Consulta agregada para buscar todos os agendamentos de uma vez
@@ -412,7 +412,7 @@ async def main(page:flet.page, user):
         
         await asyncio.gather(*tasks)
         
-        if colaborador_disponivel:
+        if colaboradores_disponivel:
             hour_choose.options.clear()
             for hora in horario_disponivel:
                 hour_choose.options.append(flet.dropdown.Option(hora))
@@ -427,7 +427,7 @@ async def main(page:flet.page, user):
         horario_escolhido = e.control.value
         collaborator_choose = _scheduling_.collaborator_choose.content
         collaborator_choose.options.clear()
-        for id, dados in colaborador_disponivel.items():
+        for id, dados in colaboradores_disponivel.items():
             if horario_escolhido in dados["horarios_disponivel"]:
                 collaborator_choose.options.append(flet.dropdown.Option(text=dados['nome'], key=id))
         collaborator_choose.update()
@@ -435,13 +435,13 @@ async def main(page:flet.page, user):
     async def agendar_corte(e):
         
         # Obtendo valores preenchidos na interface
-        name = _scheduling_.controls[0].controls[1].controls[0].content
-        phone = _scheduling_.controls[0].controls[1].controls[1].content
+        name_user = _scheduling_.controls[0].controls[1].controls[0].content
+        phone_user = _scheduling_.controls[0].controls[1].controls[1].content
         service_choose = _scheduling_.service_choose.content
         day_choose = _scheduling_.date_picker.content.value
         hour_choose = _scheduling_.hour_choose.content
         collaborator_choose = _scheduling_.collaborator_choose.content
-        verifica = verifica_campos(name, phone, service_choose, hour_choose, collaborator_choose)
+        verifica = verifica_campos(name_user, phone_user, service_choose, hour_choose, collaborator_choose)
 
         if verifica:
             service_dict = _scheduling_.service_dict[service_choose.value]
@@ -451,29 +451,21 @@ async def main(page:flet.page, user):
             day_choose = data_formact.strftime('%d-%m-%Y')   
 
             scheduling = scheduling_db.Scheduling(user,
-                                                        name.value, phone.value,
+                                                        name_user.value, phone_user.value,
                                                         service_choose.value, day_choose,
                                                         hour_choose.value, collaborator_choose.value,
                                                         service_dict)
             _scheduling = scheduling.create_scheduling()
 
             texto = "Agendamento realizado!"
-
-            mensagem_texto = f"""*Mensagem automática*
-
-Olá {name.value},
-    
-O seu agendamento para o dia *{day_choose} as {hour_choose.value}* com o(a) {colaborador_disponivel[collaborator_choose.value]['nome']},
-Foi agendado com sucesso.
-
-Para qualquer informação, ou alteração entrar em contato com contato abaixo,
-
-Atenciosamente,
-*Sistema EasyScheduling*"""
+            name_collaborator = colaboradores_disponivel[collaborator_choose.value]['nome']
+            type_message = "novo_agendamento"
 
             mensagem = whatsapp.MessageSender()
-            mensagem_enviada = mensagem.send_message(phone.value, mensagem_texto)
-            mensagem_contato = mensagem.send_contact(phone.value, TELEFONE_CONTACT)
+            mensagem_enviada = mensagem.send_message(phone_user.value, name_user.value,
+                                                    day_choose, hour_choose.value,
+                                                    name_collaborator, type_message)
+            mensagem_contato = mensagem.send_contact(phone_user.value, TELEFONE_CONTACT)
 
             await tela_transicao.main(page, user, texto)
         

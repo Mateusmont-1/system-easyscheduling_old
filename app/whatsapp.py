@@ -38,11 +38,54 @@ class MessageSender:
             print(f"Erro ao verificar número: {e}")
         return None
 
-    def send_message(self, telefone, texto):
+    def create_message(self, name_user, day, hour, name_collaborator, message_type):
+        if message_type == "novo_agendamento":
+            return f"""*Mensagem automática*
+
+Olá {name_user},
+    
+O seu agendamento para o dia *{day} às {hour}* com o(a) {name_collaborator},
+Foi agendado com sucesso.
+
+Por favor, tente chegar 10 minutos antes do horário marcado. Temos uma tolerância de 10 minutos de atraso.
+
+Para qualquer informação ou alteração, entre em contato com o número abaixo.
+
+Atenciosamente,
+*Sistema EasyScheduling*"""
+        elif message_type == "update":
+            return f"""*Mensagem automática*
+
+Olá {name_user},
+    
+O seu agendamento foi atualizado para o dia *{day} às {hour}* com o(a) {name_collaborator}.
+
+Por favor, tente chegar 10 minutos antes do horário marcado. Temos uma tolerância de 10 minutos de atraso.
+
+Para qualquer informação ou alteração, entre em contato com o número abaixo.
+
+Atenciosamente,
+*Sistema EasyScheduling*"""
+        elif message_type == "cancel":
+            return f"""*Mensagem automática*
+
+Olá {name_user},
+    
+O seu agendamento para o dia *{day} às {hour}* com o(a) {name_collaborator} foi cancelado.
+
+Para qualquer informação ou alteração, entre em contato com o número abaixo.
+
+Atenciosamente,
+*Sistema EasyScheduling*"""
+        else:
+            return "Tipo de mensagem inválido."
+
+    def send_message(self, telefone, name_user, day, hour, name_collaborator, message_type):
         try:
             serialized_phone = self.check_number(telefone)
             if not serialized_phone:
                 return {"error": "Número de telefone não possui WhatsApp ou não é válido."}
+            texto = self.create_message(name_user, day, hour, name_collaborator, message_type)
             payload = {
                 "chatId": serialized_phone,
                 "contentType": "string",
@@ -72,3 +115,8 @@ class MessageSender:
         except Exception as e:
             print(f"Erro ao enviar contato: {e}")
             return None
+
+# Exemplo de uso:
+# mensagem = MessageSender()
+# mensagem_enviada = mensagem.send_message(phone.value, name.value, day_choose, hour_choose.value, colaborador_disponivel[collaborator_choose.value]['nome'], "novo_agendamento")
+# mensagem_contato = mensagem.send_contact(phone.value, TELEFONE_CONTACT)

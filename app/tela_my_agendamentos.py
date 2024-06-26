@@ -282,29 +282,22 @@ async def main(page:flet.page, user):
 
         dict_agendamento = _scheduling_.dict_agendamentos[id_scheduling]
         # Obtendo valores para enviar a mensagem no whatsapp
-        _phone = dict_agendamento['telefone']
-        _name = dict_agendamento['nome']
+        _phone_user = dict_agendamento['telefone']
+        _name_user = dict_agendamento['nome']
         _day_choose = dict_agendamento['data']
         _hour_choose = dict_agendamento['horario']
         _collaborator_choose = dict_agendamento['colaborador_id']
-        _collaborator_name = collaborator_documents[_collaborator_choose]['nome']
+        _name_collaborator = collaborator_documents[_collaborator_choose]['nome']
         
         texto = "Agendamento cancelado!"
 
-        mensagem_texto = f"""*Mensagem automática*
-
-Olá {_name},
-    
-O seu agendamento foi cancelado para o dia *{_day_choose} as {_hour_choose}* com o(a) {_collaborator_name},
-
-Para qualquer informação, ou alteração entrar em contato com contato abaixo,
-
-Atenciosamente,
-*Sistema EasyScheduling*"""
+        type_message = "cancel"
 
         mensagem = whatsapp.MessageSender()
-        mensagem_enviada = mensagem.send_message(_phone, mensagem_texto)
-        mensagem_contato = mensagem.send_contact(_phone, TELEFONE_CONTACT)
+        mensagem_enviada = mensagem.send_message(_phone_user, _name_user,
+                                                    _day_choose, _hour_choose,
+                                                    _name_collaborator, type_message)
+        mensagem_contato = mensagem.send_contact(_phone_user, TELEFONE_CONTACT)
 
         cancelar = scheduling_db.CancelScheduling(id_scheduling)
         _cancelar = cancelar.cancel_scheduling()
