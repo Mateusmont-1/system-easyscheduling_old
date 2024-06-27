@@ -393,12 +393,22 @@ async def main(page:flet.page, user):
                 elif agenda['status_agendamento'] == "Concluido" or agenda['status_agendamento'] == "Cancelado":
                     data = agenda.get('data', 'N/A')
                     hora = agenda.get('horario', 'N/A')
+                    nome_servico = agenda.get('nome_servico', False)
+                    
+                    # Verifica se 'nome_servico' não existe e busca no primeiro item do array 'servicos'
+                    if not nome_servico:
+                        servicos = agenda.get('servicos', [])
+                        if servicos and isinstance(servicos, list) and len(servicos) > 0:
+                            nome_servico = servicos[0].get('nome', 'N/A')
+                        else:
+                            nome_servico = 'N/A'
+                    
                     data_hora = data + " as " + hora
                     data_table.controls[0].rows.append(flet.DataRow(cells=[
                         flet.DataCell(flet.Text(data_hora, text_align="center", weight="bold", color=COLOR_TEXT_IN_FIELD)),
                         flet.DataCell(flet.Text(agenda['status_agendamento'], text_align="center", weight="bold", color=COLOR_TEXT_IN_FIELD)),
                         flet.DataCell(flet.Text(agenda.get('nome', 'N/A'), text_align="center", weight="bold", color=COLOR_TEXT_IN_FIELD)),
-                        flet.DataCell(flet.Text(agenda['nome_servico'], text_align="center", weight="bold", color=COLOR_TEXT_IN_FIELD)),
+                        flet.DataCell(flet.Text(nome_servico, text_align="center", weight="bold", color=COLOR_TEXT_IN_FIELD)),
                     ]))
                     await data_table.update_async()
             if len(data_table.controls[0].rows) == 0:
