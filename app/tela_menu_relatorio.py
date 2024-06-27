@@ -84,7 +84,7 @@ class UserWidget(flet.UserControl):
             ),
         )
         
-        self._check_barber = self.Create_button("Barbeiro", self.func, self._visible_check_barber)
+        self._check_barber = self.Create_button("Colaborador", self.func, self._visible_check_barber)
         self._check_month = self.Create_button("Mensal", self.func2, self._visible_check_month)
         self._expenses = self.Create_button("Despesas", self.func3, self._visible_expenses)
         self._back_ = self.Create_button("Voltar", self.func4, self._visible_back_)
