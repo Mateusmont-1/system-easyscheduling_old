@@ -101,7 +101,7 @@ class UserWidget(flet.UserControl):
             alignment=flet.alignment.center,
             content=flet.Row(
                 controls=[
-                flet.Checkbox(label="Lembrar-se", value=bool(self.stored_email))
+                flet.Checkbox(label="Lembrar-se", value=bool(self.stored_email),label_style=flet.TextStyle(color=COLOR_TEXT_IN_FIELD),)
                 ],
             alignment=flet.MainAxisAlignment.CENTER,
             ))
