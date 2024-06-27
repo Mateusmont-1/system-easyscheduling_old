@@ -4,8 +4,8 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
-TELEFONE_CONTACT = "11948525402"
-CONTACT_NAME = "EasyScheduling"
+TELEFONE_CONTACT = os.getenv("TELEFONE_CONTACT")
+CONTACT_NAME = os.getenv("CONTACT_NAME")
 
 class MessageSender:
     def __init__(self):

@@ -325,11 +325,20 @@ async def main(page:flet.page, user, agendamento_id):
 
     async def processa_atendente(atendente, data_formatada, dia_atual, mes_atual, hora_atual, duracao_servico, agendamentos, agendamento_id):
         dados = atendente.to_dict()
-        if dados['permitir_agendamento']:
+        # Usa uma lista vazia se 'dias_folga' não existir
+        dias_folga = dados.get('dias_folga', [])  
+        # Obtém "dias_trabalhados" ou define todos os dias da semana
+        dias_trabalhados = dados.get('dias_trabalhados', [0, 1, 2, 3, 4, 5, 6])
+        if dados['permitir_agendamento'] and data_formatada not in dias_folga:
             id = atendente.id
             dia, mes, ano = map(int, data_formatada.split("-"))
             data = datetime.date(year=ano, month=mes, day=dia)
             dia_semana = data.weekday()
+
+            # Verifica se o dia da semana está em "dias_trabalhados"
+            if dia_semana not in dias_trabalhados:
+                return
+
             if dia_semana < 5:
                 horarios_disponiveis = dados['dias_uteis']
             elif dia_semana == 5:

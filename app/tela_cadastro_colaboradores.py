@@ -20,6 +20,7 @@ class UserWidget(flet.UserControl):
         func,
         func2,
         func3,
+        func4,
         ):
         self.title = title
         self._sub_title = sub_title
@@ -29,6 +30,7 @@ class UserWidget(flet.UserControl):
         self.func = func
         self.func2 = func2
         self.func3 = func3
+        self.func4 = func4
         super().__init__()
     
     def InputTextField(self, text:str, hide:bool):
@@ -138,13 +140,10 @@ class UserWidget(flet.UserControl):
         for type in self.type_collaborator_ref:
             # Cada documento é um objeto com ID e dados     
             if type.id != "cliente":
-                
                 type_dropdown = self._type_collaborator.content
                 _type_id = type.id
                 _type_data = type.to_dict()
-        
                 _nome = type.id
-            
                 # adiciona no dropdown o atendente
                 type_dropdown.options.append(flet.dropdown.Option(text= _nome, key= _type_id,))
         
@@ -223,30 +222,6 @@ class UserWidget(flet.UserControl):
             alignment=flet.MainAxisAlignment.CENTER,
             ))
         
-        self._sign_in = flet.Container(
-            content=flet.ElevatedButton(
-                on_click=partial(self.func),
-                content=flet.Text(
-                    self.btn_name,
-                    size=20,
-                    weight="bold",
-                ),
-                style=flet.ButtonStyle(
-                    shape={
-                        "":flet.RoundedRectangleBorder
-                        (radius=8),
-                    },
-                    color={
-                        "":"white",
-                    }
-                ),
-                bgcolor=COLOR_BACKGROUND_BUTTON,
-                color=COLOR_TEXT_IN_BUTTON,
-                height=48,
-                width=275,
-            )
-        )
-        
         self._checkbox_terms = flet.Container(
             alignment=flet.alignment.center,
             content=flet.Column(
@@ -296,9 +271,58 @@ class UserWidget(flet.UserControl):
                         spacing=0,
                     ),
                 ],
-                spacing=0,  # Ajuste o espaçamento entre os elementos
+                spacing=0,  
             ),
             visible=True,
+        )
+
+        self._weekdays_button = flet.Container(
+            visible=False,
+            content=flet.ElevatedButton(
+                on_click=partial(self.func4),
+                content=flet.Text(
+                    "Dias de Trabalho",
+                    size=20,
+                    weight="bold",
+                ),
+                style=flet.ButtonStyle(
+                    shape={
+                        "":flet.RoundedRectangleBorder
+                        (radius=8),
+                    },
+                    color={
+                        "":"white",
+                    }
+                ),
+                bgcolor=COLOR_BACKGROUND_BUTTON,
+                color=COLOR_TEXT_IN_BUTTON,
+                height=48,
+                width=275,
+            )
+        )
+
+        self._sign_in = flet.Container(
+            content=flet.ElevatedButton(
+                on_click=partial(self.func),
+                content=flet.Text(
+                    self.btn_name,
+                    size=20,
+                    weight="bold",
+                ),
+                style=flet.ButtonStyle(
+                    shape={
+                        "":flet.RoundedRectangleBorder
+                        (radius=8),
+                    },
+                    color={
+                        "":"white",
+                    }
+                ),
+                bgcolor=COLOR_BACKGROUND_BUTTON,
+                color=COLOR_TEXT_IN_BUTTON,
+                height=48,
+                width=275,
+            )
         )
 
         self._back_button = flet.Container(
@@ -324,7 +348,7 @@ class UserWidget(flet.UserControl):
                 width=275,
             )
         )
-        
+
         return flet.Column(
             horizontal_alignment="center",
             controls=[
@@ -386,20 +410,26 @@ class UserWidget(flet.UserControl):
                 self._checkbox_schedulling,
                 self._checkbox_terms,
                 flet.Container(padding=5),
+                self._weekdays_button,
                 self._sign_in,
                 self._back_button,
+                
             ],
         )
 
 async def main(page:flet.page, user):
     page.title = "Cadastro colaborador"
-    # page.bgcolor = "#f0f3f6"
-    # page.horizontal_alignment = "center"
-    # page.vertical_alignment = "center"
-    # page.theme_mode = "dark"
 
     page.clean()
     
+    work_monday = True
+    work_tuesday = True
+    work_wednesday = True
+    work_thursday= True
+    work_friday = True
+    work_saturday = True
+    work_sunday = True
+
     db = get_firestore_client()
     type_collaboraty_ref = db.collection("funcoes").stream()
     
@@ -422,7 +452,6 @@ async def main(page:flet.page, user):
                 _register_collaboraty_main.height = altura
                 _register_collaboraty_main.update()
 
-        # Inicio True retorna largura para _main_column
         if inicio:
             if page.width > 600:     
                 largura = 600
@@ -430,8 +459,7 @@ async def main(page:flet.page, user):
             else:
                 largura = page.width - 30
                 return largura
-
-        # Inicio False retorna altura para _main_column    
+  
         elif inicio is False:
             if page.height > 600:     
                 altura = 600
@@ -468,51 +496,117 @@ async def main(page:flet.page, user):
             )
         )
 
+    def open_weekday_dialog(e):
+        weekdays_dialog = flet.AlertDialog(
+            title=flet.Text("Selecione os Dias da Semana"),
+            scrollable=True,
+            content=flet.Column(
+                controls=[
+                    flet.Checkbox(label="Segunda-feira", value=work_monday, data="monday"),
+                    flet.Checkbox(label="Terça-feira", value=work_tuesday, data="tuesday"),
+                    flet.Checkbox(label="Quarta-feira", value=work_wednesday, data="wednesday"),
+                    flet.Checkbox(label="Quinta-feira", value=work_thursday, data="thursday"),
+                    flet.Checkbox(label="Sexta-feira", value=work_friday, data="friday"),
+                    flet.Checkbox(label="Sábado", value=work_saturday, data="saturday"),
+                    flet.Checkbox(label="Domingo", value=work_sunday, data="sunday"),
+                ]
+            ),
+            actions=[
+                flet.TextButton("OK", on_click=close_weekday_dialog)
+            ],
+        )
+        page.dialog = weekdays_dialog
+        weekdays_dialog.open = True
+        page.update()
+    
+    def close_weekday_dialog(e):
+        nonlocal work_monday, work_tuesday, work_wednesday, work_thursday, work_friday, work_saturday, work_sunday
+        checkboxes = page.dialog.content.controls
+        work_monday = checkboxes[0].value
+        work_tuesday = checkboxes[1].value
+        work_wednesday = checkboxes[2].value
+        work_thursday = checkboxes[3].value
+        work_friday = checkboxes[4].value
+        work_saturday = checkboxes[5].value
+        work_sunday = checkboxes[6].value
+
+        page.dialog.open = False
+        page.update()
+
     async def _register_collaboraty(e):
-        # Obtendo email, senha, nome, telefone, informado na interface
+        # Obtém os valores dos campos do formulário
+        email, senha, nome, ddd, telefone, checkbox_termos, type_collaboraty, checkbox_create_collaborator, checkbox_scheduling, workday_start_time, workday_end_time, saturday_start_time, saturday_end_time, sunday_start_time, sunday_end_time = get_form_values()
+
+        # Verifica os campos
+        if verifica_campos():
+            telefone_completo = f'({ddd}){telefone.replace("-", "")}'
+            # Cria a lista de dias de trabalho
+            list_work_days = get_work_days()
+
+            # Cria o cadastro do colaborador
+            cadastro = create_collaborator(email, senha, nome, telefone_completo, checkbox_termos, type_collaboraty, checkbox_create_collaborator, list_work_days, checkbox_scheduling, workday_start_time, workday_end_time, saturday_start_time, saturday_end_time, sunday_start_time, sunday_end_time)
+            
+            if cadastro.uid:
+                texto = "Colaborador cadastrado!"
+                await tela_transicao.main(page, user, texto)
+                print(f"Dias de trabalho selecionados: {list_work_days}")
+            else:
+                show_email_error(email)
+        
+    def get_form_values():
         email = _register_collaboraty_.controls[0].controls[2].controls[0].content.value
         senha = _register_collaboraty_.controls[0].controls[2].controls[1].content.value
         nome = _register_collaboraty_.controls[0].controls[2].controls[2].content.value
         ddd = _register_collaboraty_.controls[0].controls[3].controls[0].content.value
         telefone = _register_collaboraty_.controls[0].controls[3].controls[1].content.value
         checkbox_termos = _register_collaboraty_._checkbox_terms.content.controls[0].controls[0].value
-        # Obtendo o tipo de colaborador
         type_collaboraty = _register_collaboraty_._type_collaborator.content.value
-        # Verificação se é para cadastrar como atendente ou somente administrador
         checkbox_create_collaborator = _register_collaboraty_._checkbox_collaborator.content.controls[0].value
-        # Verificação se é para permitir agendamento com o atendente
         checkbox_scheduling = _register_collaboraty_._checkbox_schedulling.content.controls[0].value
-        # Se todos os campos foram preenchidos executa cadastro no sistema
-        if verifica_campos():
-            # Unificando DDD com telefone
-            telefone_completo = f'({ddd}){telefone.replace("-", "")}'
-            # Obtendo os valores de horário de funcionamento
-            workday_start_time = _register_collaboraty_.controls[0].controls[8].controls[0].content.value
-            workday_end_time = _register_collaboraty_.controls[0].controls[8].controls[1].content.value
-            saturday_start_time = _register_collaboraty_.controls[0].controls[10].controls[0].content.value
-            saturday_end_time = _register_collaboraty_.controls[0].controls[10].controls[1].content.value
-            sunday_start_time = _register_collaboraty_.controls[0].controls[12].controls[0].content.value
-            sunday_end_time = _register_collaboraty_.controls[0].controls[12].controls[1].content.value
-            cadastro = register.Collaborator(email, senha, 
-                                             nome, telefone_completo,
-                                             checkbox_termos, 
-                                             type_collaboraty, checkbox_create_collaborator,
-                                             checkbox_scheduling, workday_start_time,
-                                             workday_end_time, saturday_start_time,
-                                             saturday_end_time, sunday_start_time,
-                                             sunday_end_time)
-            cadastro.criar_colaborador()
-            if cadastro.uid:
-                texto = "Colaborador cadastrado!"
-                await tela_transicao.main(page, user, texto)
-            else:
-                email = _register_collaboraty_.controls[0].controls[2].controls[0].content
-                email.border_color = COLOR_BORDER_COLOR_ERROR
-                email.value = "E-mail informado em uso"
-                email.update()
+        workday_start_time = _register_collaboraty_.controls[0].controls[8].controls[0].content.value
+        workday_end_time = _register_collaboraty_.controls[0].controls[8].controls[1].content.value
+        saturday_start_time = _register_collaboraty_.controls[0].controls[10].controls[0].content.value
+        saturday_end_time = _register_collaboraty_.controls[0].controls[10].controls[1].content.value
+        sunday_start_time = _register_collaboraty_.controls[0].controls[12].controls[0].content.value
+        sunday_end_time = _register_collaboraty_.controls[0].controls[12].controls[1].content.value
+        
+        return email, senha, nome, ddd, telefone, checkbox_termos, type_collaboraty, checkbox_create_collaborator, checkbox_scheduling, workday_start_time, workday_end_time, saturday_start_time, saturday_end_time, sunday_start_time, sunday_end_time
+
+    def create_collaborator(email, senha, nome, telefone_completo, checkbox_termos, type_collaboraty, checkbox_create_collaborator, list_work_days, checkbox_scheduling, workday_start_time, workday_end_time, saturday_start_time, saturday_end_time, sunday_start_time, sunday_end_time):
+        cadastro = register.Collaborator(
+            email, senha, nome, telefone_completo,
+            checkbox_termos, type_collaboraty, checkbox_create_collaborator,
+            list_work_days, checkbox_scheduling, workday_start_time, workday_end_time,
+            saturday_start_time, saturday_end_time, sunday_start_time, sunday_end_time
+        )
+        cadastro.criar_colaborador()
+        return cadastro
+
+    def get_work_days():
+        work_days = []
+        if work_monday:
+            work_days.append(0)
+        if work_tuesday:
+            work_days.append(1)
+        if work_wednesday:
+            work_days.append(2)
+        if work_thursday:
+            work_days.append(3)
+        if work_friday:
+            work_days.append(4)
+        if work_saturday:
+            work_days.append(5)
+        if work_sunday:
+            work_days.append(6)
+        return work_days
+
+    def show_email_error(email):
+        email = _register_collaboraty_.controls[0].controls[2].controls[0].content
+        email.border_color = COLOR_BORDER_COLOR_ERROR
+        email.value = "E-mail informado em uso"
+        email.update()
             
     def verifica_campos():
-
         def is_valid_email(email):
             try:
                 # Valida o email e retorna as informações normalizadas
@@ -548,13 +642,9 @@ async def main(page:flet.page, user):
         nome = _register_collaboraty_.controls[0].controls[2].controls[2].content
         ddd = _register_collaboraty_.controls[0].controls[3].controls[0].content
         telefone = _register_collaboraty_.controls[0].controls[3].controls[1].content
-        # Obtendo o tipo de colaborador
         type_collaboraty = _register_collaboraty_._type_collaborator.content
-        # Verificação se é para cadastrar como atendente ou somente administrador
         checkbox_create_collaborator = _register_collaboraty_._checkbox_collaborator.content.controls[0].value
-        # Verificação se é para permitir agendamento com o atendente
         checkbox_termos = _register_collaboraty_._checkbox_terms.content.controls[0].controls[0]
-        # Verificação se os termos de uso foram aceitos
         verifica = 0
         if email.value == "":
             email.border_color = COLOR_BORDER_COLOR_ERROR
@@ -625,7 +715,6 @@ async def main(page:flet.page, user):
             checkbox_termos.update()
         # Verifica se a opção de criar atendente no sistema está ativa
         if checkbox_create_collaborator == True:
-            # Se estiver ativo possui mais campos de prenchimentos obrigatorios
             # Obtendo referencia aos campos que devem ser preenchidos
             workday_start_time = _register_collaboraty_.controls[0].controls[8].controls[0].content
             workday_end_time = _register_collaboraty_.controls[0].controls[8].controls[1].content
@@ -640,80 +729,6 @@ async def main(page:flet.page, user):
             verifica += validate_time_field(saturday_end_time)
             verifica += validate_time_field(sunday_start_time)
             verifica += validate_time_field(sunday_end_time)
-            
-            # # Verificação se os hórarios estão preenchidos
-            # if workday_start_time.value == "":
-            #     workday_start_time.border_color = COLOR_BORDER_COLOR_ERROR
-            #     workday_start_time.update()
-            #     verifica += 1
-            # # Verifica se o valor presente não é um digito
-            # elif not workday_start_time.value.isdigit():
-            #     workday_start_time.border_color = COLOR_BORDER_COLOR_ERROR
-            #     workday_start_time.update()
-            #     verifica += 1
-            # else:
-            #     workday_start_time.border_color = COLOR_BORDER_COLOR
-            #     workday_start_time.update()
-                
-            # if workday_end_time.value == "":
-            #     workday_end_time.border_color = COLOR_BORDER_COLOR_ERROR
-            #     workday_end_time.update()
-            #     verifica += 1
-            # elif not workday_end_time.value.isdigit():
-            #     workday_end_time.border_color = COLOR_BORDER_COLOR_ERROR
-            #     workday_end_time.update()
-            #     verifica += 1
-            # else:
-            #     workday_end_time.border_color = COLOR_BORDER_COLOR
-            #     workday_end_time.update()
-
-            # if saturday_start_time.value == "":
-            #     saturday_start_time.border_color = COLOR_BORDER_COLOR_ERROR
-            #     saturday_start_time.update()
-            #     verifica += 1
-            # elif not saturday_start_time.value.isdigit():
-            #     saturday_start_time.border_color = COLOR_BORDER_COLOR_ERROR
-            #     saturday_start_time.update()
-            #     verifica += 1
-            # else:
-            #     saturday_start_time.border_color = COLOR_BORDER_COLOR
-            #     saturday_start_time.update()
-
-            # if saturday_end_time.value == "":
-            #     saturday_end_time.border_color = COLOR_BORDER_COLOR_ERROR
-            #     saturday_end_time.update()
-            #     verifica += 1
-            # elif not saturday_end_time.value.isdigit():
-            #     saturday_end_time.border_color = COLOR_BORDER_COLOR_ERROR
-            #     saturday_end_time.update()
-            #     verifica += 1
-            # else:
-            #     saturday_end_time.border_color = COLOR_BORDER_COLOR
-            #     saturday_end_time.update()
-
-            # if sunday_start_time.value == "":
-            #     sunday_start_time.border_color = COLOR_BORDER_COLOR_ERROR
-            #     sunday_start_time.update()
-            #     verifica += 1
-            # elif not sunday_start_time.value.isdigit():
-            #     sunday_start_time.border_color = COLOR_BORDER_COLOR_ERROR
-            #     sunday_start_time.update()
-            #     verifica += 1
-            # else:
-            #     sunday_start_time.border_color = COLOR_BORDER_COLOR
-            #     sunday_start_time.update()
-            
-            # if sunday_end_time.value == "":
-            #     sunday_end_time.border_color = COLOR_BORDER_COLOR_ERROR
-            #     sunday_end_time.update()
-            #     verifica += 1
-            # elif not sunday_end_time.value.isdigit():
-            #     sunday_end_time.border_color = COLOR_BORDER_COLOR_ERROR
-            #     sunday_end_time.update()
-            #     verifica += 1
-            # else:
-            #     sunday_end_time.border_color = COLOR_BORDER_COLOR
-            #     sunday_end_time.update()
         
         return True if verifica == 0 else None
 
@@ -729,7 +744,7 @@ async def main(page:flet.page, user):
         row_segunda_sexta = _register_collaboraty_.controls[0].controls[8]
         row_sabado = _register_collaboraty_.controls[0].controls[10]
         row_domingo = _register_collaboraty_.controls[0].controls[12]
-        # email = _sign_in_.controls[0].controls[3].controls[0].content
+        work_day = _register_collaboraty_.controls[0].controls[16]
         
         if type_collaboraty.value == "administrador":
             checkbox_create_collaborator.visible = True
@@ -749,6 +764,7 @@ async def main(page:flet.page, user):
             row_segunda_sexta.visible = True
             row_sabado.visible = True
             row_domingo.visible = True
+            work_day.visible = True
             checkbox_sheduling.update()
             text_time.update()
             text_time2.update()
@@ -757,6 +773,7 @@ async def main(page:flet.page, user):
             row_segunda_sexta.update()
             row_sabado.update()
             row_domingo.update()
+            work_day.update()
             
         else:
             checkbox_sheduling.visible = False
@@ -767,6 +784,7 @@ async def main(page:flet.page, user):
             row_segunda_sexta.visible = False
             row_sabado.visible = False
             row_domingo.visible = False
+            work_day.visible = False
             checkbox_sheduling.update()
             text_time.update()
             text_time2.update()
@@ -775,8 +793,7 @@ async def main(page:flet.page, user):
             row_segunda_sexta.update()
             row_sabado.update()
             row_domingo.update()
-
-        # _register_collaboraty_._type_collaborator.content
+            work_day.update()
     
     async def _back_button(e):
         await tela_menu_main.main(page,user)
@@ -790,6 +807,7 @@ async def main(page:flet.page, user):
         _register_collaboraty,
         check_create_collaborator,
         _back_button,
+        open_weekday_dialog,
     )
     
     _register_collaboraty_main = _main_column_()

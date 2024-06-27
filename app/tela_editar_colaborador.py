@@ -19,6 +19,7 @@ class UserWidget(flet.UserControl):
         type_collaboraty,
         func,
         func2,
+        func3,
         collaborator_ref,
         user_ref
         ):
@@ -29,11 +30,11 @@ class UserWidget(flet.UserControl):
         self.type_collaborator_ref = type_collaboraty
         self.func = func
         self.func2 = func2
+        self.func3 = func3
         self.collaborator_ref = collaborator_ref.to_dict()
         self.user_ref = user_ref.to_dict()
         self.collaborator_id = collaborator_ref.id
         super().__init__()
-        
     
     def InputTextField(self, text:str, hide:bool, value_text=None):
         return flet.Container(
@@ -208,6 +209,30 @@ class UserWidget(flet.UserControl):
             alignment=flet.MainAxisAlignment.CENTER,
             ))
         
+        self._weekdays_button = flet.Container(
+            content=flet.ElevatedButton(
+                on_click=partial(self.func3),
+                content=flet.Text(
+                    "Dias de Trabalho",
+                    size=20,
+                    weight="bold",
+                ),
+                style=flet.ButtonStyle(
+                    shape={
+                        "":flet.RoundedRectangleBorder
+                        (radius=8),
+                    },
+                    color={
+                        "":"white",
+                    }
+                ),
+                bgcolor=COLOR_BACKGROUND_BUTTON,
+                color=COLOR_TEXT_IN_BUTTON,
+                height=48,
+                width=275,
+            )
+        )
+
         self._sign_in = flet.Container(
             content=flet.ElevatedButton(
                 on_click=partial(self.func),
@@ -305,6 +330,7 @@ class UserWidget(flet.UserControl):
                 ),
                 self._checkbox_schedulling,
                 flet.Container(padding=5),
+                self._weekdays_button,
                 self._sign_in,
                 self._back_button,
             ],
@@ -312,10 +338,6 @@ class UserWidget(flet.UserControl):
 
 async def main(page:flet.page, user, id_colaborador):
     page.title = "Editar colaborador"
-    # page.bgcolor = "#f0f3f6"
-    # page.horizontal_alignment = "center"
-    # page.vertical_alignment = "center"
-    # page.theme_mode = "dark"
 
     page.clean()
     
@@ -364,6 +386,35 @@ async def main(page:flet.page, user, id_colaborador):
     
     page.window.on_resized = page_resize
                 
+    def open_weekday_dialog(e):
+        dias_trabalhados = _register_collaboraty_.collaborator_ref.get('dias_trabalhados', [0, 1, 2, 3, 4, 5, 6])
+        dias_semana = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"]
+        
+        checkboxes = []
+        for i, dia in enumerate(dias_semana):
+            checkboxes.append(
+                flet.Checkbox(label=dia, value=(i in dias_trabalhados), data=i)
+            )
+        
+        weekdays_dialog = flet.AlertDialog(
+            title=flet.Text("Selecione os Dias da Semana"),
+            scrollable=True,
+            content=flet.Column(controls=checkboxes),
+            actions=[flet.TextButton("OK", on_click=close_weekday_dialog)]
+        )
+        
+        page.dialog = weekdays_dialog
+        weekdays_dialog.open = True
+        page.update()
+
+    def close_weekday_dialog(e):
+        checkboxes = page.dialog.content.controls
+        work_days_selected = [cb.data for cb in checkboxes if cb.value]
+        _register_collaboraty_.collaborator_ref['dias_trabalhados'] = work_days_selected
+        
+        page.dialog.open = False
+        page.update()
+
     def _main_column_():
         return flet.Container(
             width=page_resize(e=None, inicio=True),
@@ -399,14 +450,13 @@ async def main(page:flet.page, user, id_colaborador):
         telefone = _register_collaboraty_.controls[0].controls[2].controls[1].content.value
         # Obtendo o tipo de colaborador
         type_collaboraty = _register_collaboraty_._type_collaborator.content.value
-        # Verificação se é para cadastrar como atendente ou somente administrador
-        checkbox_create_barber = _register_collaboraty_._checkbox_barber.content.controls[0].value
-        # Verificação se é para permitir agendamento com o atendente
+        # Verificação se é para permitir agendamento com o barbeiro
         checkbox_scheduling = _register_collaboraty_._checkbox_schedulling.content.controls[0].value
-        # Verifica se os campos de preenchimento obrigatorio foram preenchidos
-        verifica = verifica_campos()
         # Se todos os campos foram preenchidos executa cadastro no sistema
-        if verifica:
+        if verifica_campos():
+            # Verifica se o campo 'dias_trabalhados' está presente, caso contrário assume todos os dias da semana
+            dias_trabalhados = _register_collaboraty_.collaborator_ref.get('dias_trabalhados', [0, 1, 2, 3, 4, 5, 6])
+    
             # Obtendo os valores de horário de funcionamento
             workday_start_time = _register_collaboraty_.controls[0].controls[7].controls[0].content.value
             workday_end_time = _register_collaboraty_.controls[0].controls[7].controls[1].content.value
@@ -414,23 +464,19 @@ async def main(page:flet.page, user, id_colaborador):
             saturday_end_time = _register_collaboraty_.controls[0].controls[9].controls[1].content.value
             sunday_start_time = _register_collaboraty_.controls[0].controls[11].controls[0].content.value
             sunday_end_time = _register_collaboraty_.controls[0].controls[11].controls[1].content.value
-            # cadastro = register.UpdateCollaborator(nome, telefone, type_collaboraty,checkbox_scheduling, workday_start_time,workday_end_time, saturday_start_time,saturday_end_time, sunday_start_time,sunday_end_time, colaborador)
-            cadastro = register.UpdateCollaborator(nome, telefone, type_collaboraty, checkbox_scheduling, workday_start_time,
-                                                   workday_end_time, saturday_start_time, saturday_end_time, sunday_start_time,
-                                                   sunday_end_time, id_colaborador)
+            # Cria a instância da classe UpdateCollaborator com os parâmetros necessários
+            cadastro = register.UpdateCollaborator(
+                nome, telefone, type_collaboraty, checkbox_scheduling, 
+                workday_start_time, workday_end_time, 
+                saturday_start_time, saturday_end_time, 
+                sunday_start_time, sunday_end_time, 
+                id_colaborador, dias_trabalhados
+            )
             cadastro.atualizar_colaborador()
             
             texto = "Colaborador atualizado!"
-            await tela_transicao.main(page, user, texto)
-            # if cadastro.uid:
-            #     print("Conta criada")
-            #     conta = login.User(email.value, senha.value)
-            #     acesso = conta.login_firebase()
-            #     if acesso:
-            #         print(acesso,  "é if do TRUE")
-            #         tela_menu.main(page, acesso)
+            await tela_transicao.main(page, user, texto)     
                 
-            
     def verifica_campos():
 
         # Expressão regular para validar o formato "HH:MM"
@@ -507,6 +553,7 @@ async def main(page:flet.page, user, id_colaborador):
         type_collaboraty_ref,
         _update_collaboraty,
         back_button,
+        open_weekday_dialog,
         colaborar_ref,
         user_ref
     )

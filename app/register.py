@@ -48,16 +48,17 @@ class Collaborator:
         senha: str,
         nome: str,
         telefone: str,
-        checkbox_termos:bool,
+        checkbox_termos: bool,
         tipo_usuario,
         create_colaborador,
+        list_work_days,
         scheduling=None,
-        workday_start_time: str=None,
-        workday_end_time: str=None,
-        saturday_start_time: str=None,
-        saturday_end_time: str=None,
-        sunday_start_time: str=None,
-        sunday_end_time: str=None,
+        workday_start_time: str = None,
+        workday_end_time: str = None,
+        saturday_start_time: str = None,
+        saturday_end_time: str = None,
+        sunday_start_time: str = None,
+        sunday_end_time: str = None,
     ):
         self.email = email
         self.senha = senha
@@ -66,6 +67,7 @@ class Collaborator:
         self.checkbox_termos = checkbox_termos
         self.tipo_usuario = tipo_usuario
         self.create_colaborador = create_colaborador
+        self.list_work_days = list_work_days
         self.scheduling = scheduling
         if self.create_colaborador:
             self.workday_start_time = datetime.strptime(workday_start_time, "%H:%M")
@@ -75,11 +77,11 @@ class Collaborator:
             self.sunday_start_time = datetime.strptime(sunday_start_time, "%H:%M")
             self.sunday_end_time = datetime.strptime(sunday_end_time, "%H:%M")
 
-            self.user_data = {}
-            self.uid = ""
-            self.schedules_workday = list()
-            self.schedules_saturday = list()
-            self.schedules_sunday = list()
+        self.user_data = {}
+        self.uid = ""
+        self.schedules_workday = list()
+        self.schedules_saturday = list()
+        self.schedules_sunday = list()
 
     def criar_colaborador(self):
         try:
@@ -105,6 +107,7 @@ class Collaborator:
                     'dias_uteis': self.schedules_workday,
                     'sabado': self.schedules_saturday,
                     'domingo': self.schedules_sunday,
+                    'dias_trabalhados': self.list_work_days,
                     'permitir_agendamento': self.scheduling,
                     'semana_inicio': self.workday_start_time.strftime("%H:%M"),
                     'semana_fim': self.workday_end_time.strftime("%H:%M"),
@@ -142,6 +145,7 @@ class UpdateCollaborator:
         sunday_start_time: str,
         sunday_end_time: str,
         id_colaborador,
+        list_work_days,
     ):
         self.nome = nome
         self.telefone = telefone
@@ -154,6 +158,7 @@ class UpdateCollaborator:
         self.sunday_start_time = datetime.strptime(sunday_start_time, "%H:%M")
         self.sunday_end_time = datetime.strptime(sunday_end_time, "%H:%M")
         self.id_colaborador = id_colaborador
+        self.list_work_days = list_work_days
         self.user_data = {}
         self.schedules_workday = list()
         self.schedules_saturday = list()
@@ -178,6 +183,7 @@ class UpdateCollaborator:
                 'dias_uteis': self.schedules_workday,
                 'sabado': self.schedules_saturday,
                 'domingo': self.schedules_sunday,
+                'dias_trabalhados': self.list_work_days,
                 'permitir_agendamento': self.scheduling,
                 'semana_inicio': self.workday_start_time.strftime("%H:%M"),
                 'semana_fim': self.workday_end_time.strftime("%H:%M"),
