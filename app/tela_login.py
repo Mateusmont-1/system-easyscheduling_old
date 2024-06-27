@@ -24,6 +24,7 @@ class UserWidget(flet.UserControl):
         func1,
         func2,
         func3,
+        stored_email: str = ""
     ):
         super().__init__()
         self.image = image
@@ -34,14 +35,16 @@ class UserWidget(flet.UserControl):
         self.func = func1
         self.func2 = func2
         self.func3 = func3
+        self.stored_email = stored_email
 
-    def InputTextField(self, text: str, hide: bool):
+    def InputTextField(self, text: str, hide: bool, default_value: str = ""):
         return flet.Container(
             alignment=flet.alignment.center,
             content=flet.TextField(
                 height=48,
                 width=275,
                 keyboard_type="email",
+                value=default_value,
                 bgcolor=COLOR_BACKGROUND_TEXT_FIELD,
                 content_padding=10,
                 on_submit=partial(self.func),
@@ -94,6 +97,17 @@ class UserWidget(flet.UserControl):
             ),
         )
 
+        self.remember_me_checkbox = flet.Container(
+            alignment=flet.alignment.center,
+            content=flet.Row(
+                controls=[
+                flet.Checkbox(label="Lembrar-se", value=bool(self.stored_email))
+                ],
+            alignment=flet.MainAxisAlignment.CENTER,
+            ))
+
+        # self.remember_me_checkbox = flet.Checkbox(label="Lembrar-se", value=bool(self.stored_email))
+
         self._sign_in = flet.Container(
             content=flet.ElevatedButton(
                 on_click=partial(self.func),
@@ -121,7 +135,7 @@ class UserWidget(flet.UserControl):
             content=flet.Text(
                 "Esqueceu a senha?",
                 size=15,
-                color=COLOR_TEXT_BUTTON,
+                color=COLOR_TEXT_IN_FIELD,
             ),
             on_click=partial(self.func3),
         )
@@ -146,10 +160,11 @@ class UserWidget(flet.UserControl):
                 flet.Column(
                     spacing=12,
                     controls=[
-                        self.InputTextField("E-mail", False),
+                        self.InputTextField("E-mail", False, self.stored_email),
                         self.InputTextField("Senha", True),
                     ],
                 ),
+                self.remember_me_checkbox,
                 flet.Container(padding=2),
                 self._sign_in,
                 flet.Row(
@@ -159,14 +174,14 @@ class UserWidget(flet.UserControl):
                             content=flet.Text(
                                 self.text,
                                 size=15,
-                                color=COLOR_TEXT,
+                                color="#C0C0C0",
                             )
                         ),
                         flet.TextButton(
                             content=flet.Text(
                                 "cadastrar-se",
                                 size=15,
-                                color=COLOR_TEXT_BUTTON,
+                                color=COLOR_TEXT_IN_FIELD,
                             ),
                             on_click=partial(self.func2),
                         )
@@ -181,6 +196,11 @@ class UserWidget(flet.UserControl):
 
 async def main(page: flet.Page):
     page.clean()
+    
+    # Adicione uma função para carregar o email armazenado
+    async def load_stored_email():
+        stored_email = await page.client_storage.get_async("email")
+        return stored_email
 
     image_logo = "icon.png"
 
@@ -247,6 +267,34 @@ async def main(page: flet.Page):
         )
 
     async def _login_user(e):
+        email = _sign_in_.controls[0].controls[3].controls[0].content
+        senha = _sign_in_.controls[0].controls[3].controls[1].content
+        remember_me = _sign_in_.remember_me_checkbox.content.controls[0].value
+        if remember_me:
+            # Armazenar o e-mail no armazenamento local
+            await page.client_storage.set_async("email", email.value)
+        else:
+            # Remover o e-mail armazenado se o checkbox não estiver marcado
+            await page.client_storage.remove_async("email")
+        
+        page.update()
+
+        if verifica_campos():
+            conta = login.User(email.value, senha.value)
+            acesso = conta.login_firebase()
+            if acesso == "email_not_found":
+                email.border_color = COLOR_BORDER_COLOR_ERROR
+                email.update()
+            elif acesso == "incorrect_password":
+                senha.border_color = COLOR_BORDER_COLOR_ERROR
+                senha.update()
+            elif acesso == "email_not_verified":
+                texto = "E-mail de verificação enviado, verifique seu e-mail!"
+                await tela_transicao.main(page, None, texto, True)
+            elif acesso:
+                await tela_menu_main.main(page, acesso)
+
+    def verifica_campos():
         def is_valid_email(email):
             try:
                 valid = validate_email(email)
@@ -258,7 +306,6 @@ async def main(page: flet.Page):
 
         email = _sign_in_.controls[0].controls[3].controls[0].content
         senha = _sign_in_.controls[0].controls[3].controls[1].content
-
         verifica = 0
         if email.value == "":
             email.border_color = COLOR_BORDER_COLOR_ERROR
@@ -283,28 +330,16 @@ async def main(page: flet.Page):
             senha.border_color = COLOR_BORDER_COLOR
             senha.update()
 
-        page.update()
-
-        if verifica == 0:
-            conta = login.User(email.value, senha.value)
-            acesso = conta.login_firebase()
-            if acesso == "email_not_found":
-                email.border_color = COLOR_BORDER_COLOR_ERROR
-                email.update()
-            elif acesso == "incorrect_password":
-                senha.border_color = COLOR_BORDER_COLOR_ERROR
-                senha.update()
-            elif acesso == "email_not_verified":
-                texto = "E-mail de verificação enviado, verifique seu e-mail!"
-                await tela_transicao.main(page, None, texto, True)
-            elif acesso:
-                await tela_menu_main.main(page, acesso)
-
+        return True if verifica == 0 else False
+    
     async def _register_user(e):
         await tela_cadastro_clientes.main(page)
 
     async def _forgot_password(e):
         await tela_redefinir_senha.main(page)
+
+    # Carregar o email armazenado e criar a instância de UserWidget
+    stored_email = await load_stored_email()
 
     _sign_in_ = UserWidget(
         image_logo,
@@ -314,7 +349,8 @@ async def main(page: flet.Page):
         "Não tem uma conta?",
         _login_user,
         _register_user,
-        _forgot_password
+        _forgot_password,
+        stored_email,
     )
 
     _sign_in_main = _main_column_()
@@ -322,4 +358,3 @@ async def main(page: flet.Page):
     _sign_in_main.content.controls.append(_sign_in_)
 
     add_page(_sign_in_main)
-
