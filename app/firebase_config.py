@@ -29,9 +29,8 @@ firebase_admin.initialize_app(cred, {'databaseURL': 'https://flet-login-16b06-de
 
 def initialize_firebase():
     if not firebase_admin._apps:
-        firebase_admin.initialize_app(cred, {
-            'databaseURL': 'https://flet-login-16b06-default-rtdb.firebaseio.com/'
-        })
+        firebase_admin.initialize_app(cred)
+        db = firestore.client()
 
 # Retorna a instância do cliente do Firestore
 def get_firestore_client():

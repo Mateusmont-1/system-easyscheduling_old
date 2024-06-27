@@ -3,10 +3,6 @@ from firebase_admin import db
 from .logger import logger
 from .firebase_config import get_firestore_client
 
-# # Inicialize o SDK do Firebase Admin com suas credenciais
-# cred = credentials.Certificate('Fluxo_caixa/assets/flet-login-16b06-firebase-adminsdk-i12wz-c4d92e5b8c.json')
-# firebase_admin.initialize_app(cred, {'databaseURL': 'https://flet-login-16b06-default-rtdb.firebaseio.com/'})
-
 db = get_firestore_client()
 
 class CreateExpense:
