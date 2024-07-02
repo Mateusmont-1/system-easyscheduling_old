@@ -184,54 +184,26 @@ class UserWidget(flet.UserControl):
             ],
         )
 
-async def main(page:flet.page, user):
+async def main(page: flet.page, user):
+    # Configurações iniciais da página
     page.title = "Cadastro serviço"
-    # page.bgcolor = "#f0f3f6"
-    # page.horizontal_alignment = "center"
-    # page.vertical_alignment = "center"
-    # page.theme_mode = "dark"
-
     page.clean()
     
+    # Função para redimensionar a página
     def page_resize(e=None, inicio=None):
+        largura = min(page.width - 30, 600)
+        altura = min(page.height - 60, 600)
         if e:
-            if page.width > 600:     
-                largura = 600
-                _sign_in_main.width = largura
-                _sign_in_main.update()
-            else:
-                largura = page.width - 30
-                _sign_in_main.width = largura
-                _sign_in_main.update()
-            if page.height > 600:     
-                altura = 600
-                _sign_in_main.height = altura
-                _sign_in_main.update()
-            else:
-                altura = page.height - 60
-                _sign_in_main.height = altura
-                _sign_in_main.update()
+            _sign_in_main.width = largura
+            _sign_in_main.height = altura
+            _sign_in_main.update()
+        if inicio is not None:
+            return largura if inicio else altura
 
-        # Inicio True retorna largura para _main_column
-        if inicio:
-            if page.width > 600:     
-                largura = 600
-                return largura
-            else:
-                largura = page.width - 30
-                return largura
-
-        # Inicio False retorna altura para _main_column    
-        elif inicio is False:
-            if page.height > 600:     
-                altura = 600
-                return altura
-            else:
-                altura = page.width - 60
-                return altura    
-    
+    # Define o manipulador para redimensionamento da janela
     page.window.on_resized = page_resize
-                
+
+    # Cria a coluna principal da interface
     def _main_column_():
         return flet.Container(
             width=page_resize(e=None, inicio=True),
@@ -246,47 +218,34 @@ async def main(page:flet.page, user):
             )
         )
         
-        
+    # Adiciona um componente à página
     def add_page(extruct):
-        page.add(
-            flet.Row(
-                alignment="center",
-                spacing=25,
-                controls=[
-                extruct,
-                ]
-            )
-        )
+        page.add(flet.Row(alignment="center", spacing=25, controls=[extruct]))
         
+    # Função para retornar ao menu principal
     async def _back_button(e):
-        await tela_menu_main.main(page,user)
+        await tela_menu_main.main(page, user)
                 
-
+    # Função para cadastrar o serviço
     async def _login_user(e): 
         if verificar_campos():
             nome = str(_sign_in_.controls[0].controls[2].controls[0].content.value)
-            
-            preco = float(
-                str(
-                    _sign_in_.controls[0].controls[2].controls[1].content.value
-                    ).replace(',', ".")
-                )
+            preco = float(str(_sign_in_.controls[0].controls[2].controls[1].content.value).replace(',', "."))
             duracao = int(_sign_in_.controls[0].controls[2].controls[2].content.value)
-            
             checkbox_scheduling = _sign_in_._checkbox.content.controls[0].value
             
+            # Cria e cadastra o serviço
             cadastra_servico = register_service.Service(nome, preco, duracao, checkbox_scheduling)
             confirma = cadastra_servico.criar_servico()
             if confirma:
                 texto = "Serviço cadastrado!"
                 await tela_transicao.main(page, user, texto)
-                # print('Cadastrado')
             else:
-                print('Não foi cadastrado')
                 nome = _sign_in_.controls[0].controls[2].controls[0].content
                 nome.error_text = "Este serviço já existe!"
                 nome.update()
 
+    # Verifica se os campos estão preenchidos corretamente
     def verificar_campos():
         nome = _sign_in_.controls[0].controls[2].controls[0].content
         preco = _sign_in_.controls[0].controls[2].controls[1].content
@@ -319,6 +278,7 @@ async def main(page:flet.page, user):
         duracao.update()
         return True if verificar == 0 else None
         
+    # Converte string para float
     def converte_float(s):
         try:
             float(s)
@@ -326,6 +286,7 @@ async def main(page:flet.page, user):
         except ValueError:
             return False
     
+    # Cria o widget de adição de serviço
     _sign_in_ = UserWidget(
         "Adicionar serviço!",
         "Entre com os dados do serviço abaixo",
