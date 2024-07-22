@@ -220,36 +220,35 @@ class UserWidget(flet.UserControl):
             ],
         )
 
-async def main(page:flet.page, user):
+async def main(page: flet.page, user):
+    # Configurações iniciais da página
     page.title = "Cadastrar folga"
     page.clean()
     
+    # Obtém o cliente Firestore e a referência aos colaboradores
     db = get_firestore_client()
     collaborator_ref = db.collection("colaborador").stream()
     
     datas_folga = None
 
+    # Função chamada quando a data é alterada
     def _on_date_change(e=None):
-        if e:
-            selected_date = obter_data_selecionada(e)
-        else:
-            selected_date = _scheduling_.date_picker.content.value
+        selected_date = obter_data_selecionada(e)
         collaborator_choose, query_type, data_select = obter_referencias_widgets()
         mes, ano, data_formatada = extrair_mes_ano(selected_date)
         
+        # Define as datas de folga conforme o tipo de consulta
+        nonlocal datas_folga
         if query_type.value == "0":
-            # Folga apenas no dia selecionado
-            nonlocal datas_folga
             datas_folga = [data_formatada]
             data_select.value = data_formatada
         elif query_type.value == "1":
-            # Folga referente à semana do dia informado
             datas_folga = obter_dias_da_semana(selected_date)
             data_select.value = ", ".join(datas_folga)
         
         data_select.visible = True
         data_select.update()
-        return collaborator_choose, datas_folga  # Adicionado para retornar as datas para o cadastro
+        return collaborator_choose, datas_folga
 
     # Função para cadastrar as folgas
     async def _cadastrar(e):
@@ -257,7 +256,8 @@ async def main(page:flet.page, user):
             collaborator_choose, query_type, data_select = obter_referencias_widgets()
             nonlocal datas_folga
             colaborador_id = collaborator_choose.value
-            # Cria uma instância do CollaboratorLeaveManager e adiciona as folgas
+            
+            # Adiciona as datas de folga para o colaborador
             leave_manager = register.CollaboratorLeaveManager(colaborador_id)
             confirma = leave_manager.adicionar_datas_folga(datas_folga)
             if confirma:
@@ -267,21 +267,20 @@ async def main(page:flet.page, user):
                 data_select.border_color = COLOR_BORDER_COLOR_ERROR
                 data_select.update()
 
-
     # Obtém a data selecionada no date_picker ou no evento
     def obter_data_selecionada(e):
         if e:
             return e.control.value
         return _scheduling_.date_picker.content.value
 
-    # Obtém referências aos widgets barber_choose e data_table
+    # Obtém referências aos widgets necessários
     def obter_referencias_widgets():
         collaborator_choose = _scheduling_.collaborator_choose.content
         query_type = _scheduling_.query_type.content
         data_select = _scheduling_.controls[0].controls[5].controls[0].content
         return collaborator_choose, query_type, data_select
 
-    # Extrai o mês e ano de uma data fornecida
+    # Extrai o mês, ano e data formatada de uma data fornecida
     def extrair_mes_ano(selected_date):
         data_objeto = datetime.datetime.strptime(str(selected_date), '%Y-%m-%d %H:%M:%S')
         data_formatada = data_objeto.strftime('%d-%m-%Y')
@@ -296,7 +295,6 @@ async def main(page:flet.page, user):
 
     # Função para atualizar a visibilidade dos widgets
     async def _visible_button(e):
-        dropdown = e.control.value
         query_type = _scheduling_.query_type
         day_choose = _scheduling_.day_choose
         
@@ -304,22 +302,16 @@ async def main(page:flet.page, user):
             query_type.visible = True
             query_type.update()
         else:
-            if query_type.content.value == "0":
-                day_choose.content.text = "Informe o dia"
-            elif query_type.content.value == "1":
-                day_choose.content.text = "Informe a semana"
+            day_choose.content.text = "Informe o dia" if query_type.content.value == "0" else "Informe a semana"
             day_choose.visible = True
             day_choose.update()
 
         if _scheduling_.date_picker.content.value is not None:
             _on_date_change()
 
+    # Verifica se os campos estão preenchidos corretamente
     def verifica_campos():
-        # Obtendo referências aos widgets
-        collaborator_choose = _scheduling_.collaborator_choose.content
-        query_type = _scheduling_.query_type.content
-        data_select = _scheduling_.controls[0].controls[5].controls[0].content
-
+        collaborator_choose, query_type, data_select = obter_referencias_widgets()
         campos = [
             (collaborator_choose, collaborator_choose.value),
             (query_type, query_type.value),
@@ -327,61 +319,36 @@ async def main(page:flet.page, user):
         ]
         
         campos_invalidos = False
-
         for campo, valor in campos:
             if not valor:  # Verifica se o valor está vazio ou None
                 campo.border_color = COLOR_BORDER_COLOR_ERROR
                 campo.update()
                 campos_invalidos = True
             else:
-                campo.border_color = COLOR_BORDER_COLOR  # Reset border color if needed
+                campo.border_color = COLOR_BORDER_COLOR
                 campo.update()
         
         return not campos_invalidos
 
+    # Função para retornar à página principal
     async def return_page(e):
-        ...
-        # await tela_menu_main.main(page,user)
+        await tela_menu_main.main(page, user)
              
+    # Função para redimensionar a página
     def page_resize(e=None, inicio=None):
+        largura = min(page.width - 30, 600)
+        altura = min(page.height - 60, 600)
         if e:
-            if page.width > 600:     
-                largura = 600
-                _scheduling_.width = largura
-                _scheduling_.update()
-            else:
-                largura = page.width - 30
-                _scheduling_.width = largura
-                _scheduling_.update()
-            if page.height > 600:     
-                altura = 600
-                _scheduling_.height = altura
-                _scheduling_.update()
-            else:
-                altura = page.height - 60
-                _scheduling_.height = altura
-                _scheduling_.update()
-
-        # Inicio True retorna largura para _main_column
-        if inicio:
-            if page.width > 600:     
-                largura = 600
-                return largura
-            else:
-                largura = page.width - 30
-                return largura
-
-        # Inicio False retorna altura para _main_column    
-        elif inicio is False:
-            if page.height > 600:     
-                altura = 600
-                return altura
-            else:
-                altura = page.width - 60
-                return altura    
+            _scheduling_.width = largura
+            _scheduling_.height = altura
+            _scheduling_.update()
+        if inicio is not None:
+            return largura if inicio else altura
     
+    # Define o manipulador para redimensionamento da janela
     page.window.on_resized = page_resize
                 
+    # Cria a coluna principal da interface
     def _main_column_():
         return flet.Container(
             width=page_resize(e=None, inicio=True),
@@ -396,17 +363,11 @@ async def main(page:flet.page, user):
             )
         ) 
         
+    # Adiciona um componente à página
     def add_page(extruct):
-        page.add(
-            flet.Row(
-                alignment="center",
-                spacing=25,
-                controls=[
-                extruct,
-                ]
-            )
-        )
+        page.add(flet.Row(alignment="center", spacing=25, controls=[extruct]))
         
+    # Cria o widget de agendamento de folgas
     _scheduling_ = UserWidget(
         "Cadastrar folga!",
         collaborator_ref,
@@ -421,5 +382,6 @@ async def main(page:flet.page, user):
     _scheduling_main.content.controls.append(_scheduling_)
     
     add_page(_scheduling_main)
+
    
 # flet.app(target=main, assets_dir="assets", view=flet.WEB_BROWSER, port=8090)

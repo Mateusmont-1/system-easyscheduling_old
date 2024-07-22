@@ -268,58 +268,32 @@ class UserWidget(flet.UserControl):
             ],
         )
 
-async def main(page:flet.page):
+async def main(page: flet.Page):
+    # Define o título da página
     page.title = "Cadastro"
-    # page.bgcolor = "#f0f3f6"
-    # page.horizontal_alignment = "center"
-    # page.vertical_alignment = "center"
-    # page.theme_mode = "dark"
-
     page.clean()
-    
+
+    # Função para redimensionar a página
     def page_resize(e=None, inicio=None):
+        largura = min(page.width - 30, 600) if page.width <= 600 else 600
+        altura = min(page.height - 60, 600) if page.height <= 600 else 600
+
         if e:
-            if page.width > 600:     
-                largura = 600
-                _sign_in_main.width = largura
-                _sign_in_main.update()
-            else:
-                largura = page.width - 30
-                _sign_in_main.width = largura
-                _sign_in_main.update()
-            if page.height > 600:     
-                altura = 600
-                _sign_in_main.height = altura
-                _sign_in_main.update()
-            else:
-                altura = page.height - 60
-                _sign_in_main.height = altura
-                _sign_in_main.update()
+            _sign_in_main.width = largura
+            _sign_in_main.height = altura
+            _sign_in_main.update()
 
-        # Inicio True retorna largura para _main_column
-        if inicio:
-            if page.width > 600:     
-                largura = 600
-                return largura
-            else:
-                largura = page.width - 30
-                return largura
+        if inicio is not None:
+            return largura if inicio else altura
 
-        # Inicio False retorna altura para _main_column    
-        elif inicio is False:
-            if page.height > 600:     
-                altura = 600
-                return altura
-            else:
-                altura = page.width - 60
-                return altura    
-    
+    # Associa a função de redimensionamento à janela
     page.window.on_resized = page_resize
-                
+
+    # Cria o contêiner principal da interface
     def _main_column_():
         return flet.Container(
-            width=page_resize(e=None, inicio=True),
-            height=page_resize(e=None, inicio=False),
+            width=page_resize(inicio=True),
+            height=page_resize(inicio=False),
             bgcolor=COLOR_BACKGROUND_CONTAINER,
             padding=12,
             border_radius=35,
@@ -329,22 +303,16 @@ async def main(page:flet.page):
                 horizontal_alignment="center",
             )
         )
-        
-        
-    def add_page(extruct):
-        page.add(
-            flet.Row(
-                alignment="center",
-                spacing=0,
-                controls=[
-                extruct,
-                ]
-            )
-        )
 
+    # Função para adicionar um elemento à página
+    def add_page(extruct):
+        page.add(flet.Row(alignment="center", spacing=0, controls=[extruct]))
+
+    # Função assíncrona para voltar à página de login
     async def _back_button(e):
         await tela_login.main(page)
-        
+
+    # Função assíncrona para registrar o usuário
     async def _login_user(e):
         email = _sign_in_.controls[0].controls[2].controls[0].content
         senha = _sign_in_.controls[0].controls[2].controls[1].content
@@ -352,16 +320,16 @@ async def main(page:flet.page):
         ddd = _sign_in_.controls[0].controls[3].controls[0].content
         telefone = _sign_in_.controls[0].controls[3].controls[1].content
         checkbox_termos = _sign_in_._checkbox_terms.content.controls[0].controls[0].value
-        
-        verifica = verifica_campos()
-        if verifica:
-            # Unificando DDD com telefone
+
+        if verifica_campos():
             telefone_completo = f'({ddd.value}){telefone.value.replace("-", "")}'
             cadastro = register.User(email.value, senha.value, nome.value, telefone_completo, checkbox_termos)
             cadastro.criar_usuario()
+
             if cadastro.uid:
                 conta = login.User(email.value, senha.value)
                 acesso = conta.login_firebase()
+
                 if acesso == "email_not_verified":
                     texto = "E-mail de verificação enviado, verifique seu e-mail!"
                     await tela_transicao.main(page, None, texto, True)
@@ -371,17 +339,14 @@ async def main(page:flet.page):
                 email.border_color = COLOR_BORDER_COLOR_ERROR
                 email.value = "E-mail informado em uso"
                 email.update()
-                
-            
+
+    # Função para verificar os campos do formulário
     def verifica_campos():
         def is_valid_email(email):
             try:
-                # Valida o email e retorna as informações normalizadas
-                valid = validate_email(email)
-                email = valid.email
+                validate_email(email)  # Valida o email
                 return True
             except EmailNotValidError as ex:
-                # O email não é válido, trate o erro aqui
                 print(str(ex))
                 return False
 
@@ -391,72 +356,64 @@ async def main(page:flet.page):
         ddd = _sign_in_.controls[0].controls[3].controls[0].content
         telefone = _sign_in_.controls[0].controls[3].controls[1].content
         checkbox_termos = _sign_in_._checkbox_terms.content.controls[0].controls[0]
-        # print(checkbox_termos)
         verifica = 0
 
+        # Validação do campo de email
         if email.value == "":
-            email.border_color = '#FF0000'
-            email.update()
+            email.border_color = COLOR_BORDER_COLOR_ERROR
             verifica += 1
         elif is_valid_email(email.value):
-            email.border_color = "#f0f3f6"
-            email.update()
+            email.border_color = COLOR_BORDER_COLOR
         else:
-            email.border_color = '#FF0000'
-            email.update()
+            email.border_color = COLOR_BORDER_COLOR_ERROR
             verifica += 1
-        if senha.value == "":
-            senha.border_color = '#FF0000'
-            senha.update()
-            verifica += 1
-        elif len(senha.value) < 6:
-            senha.border_color = '#FF0000'
-            senha.update()
-            verifica += 1
-        else:
-            senha.border_color = "#f0f3f6"
-            senha.update()
-        if nome.value == "":
-            nome.border_color = '#FF0000'
-            nome.update()
-            verifica += 1
-        else:
-            nome.border_color = "#f0f3f6"
-            nome.update()
-        if ddd.value == "":
-            ddd.border_color = '#FF0000'
-            ddd.update()
-            verifica += 1
-        elif len(ddd.value) != 2:
-            ddd.border_color = '#FF0000'
-            ddd.update()
-            verifica += 1
-        else:
-            ddd.border_color = "#f0f3f6"
-            ddd.update()
-        if telefone.value == "":
-            telefone.border_color = '#FF0000'
-            telefone.update()
-            verifica += 1
-        elif len(telefone.value.replace('-', "")) < 8 or len(telefone.value.replace('-', "")) > 9:
-            telefone.border_color = '#FF0000'
-            telefone.update()
-            verifica += 1
-        else:
-            telefone.border_color = "#f0f3f6"
-            telefone.error_text = None
-            telefone.update()
+        email.update()
 
+        # Validação do campo de senha
+        if senha.value == "" or len(senha.value) < 6:
+            senha.border_color = COLOR_BORDER_COLOR_ERROR
+            verifica += 1
+        else:
+            senha.border_color = COLOR_BORDER_COLOR
+        senha.update()
+
+        # Validação do campo de nome
+        if nome.value == "":
+            nome.border_color = COLOR_BORDER_COLOR_ERROR
+            verifica += 1
+        else:
+            nome.border_color = COLOR_BORDER_COLOR
+        nome.update()
+
+        # Validação do campo de DDD
+        if ddd.value == "" or len(ddd.value) != 2:
+            ddd.border_color = COLOR_BORDER_COLOR_ERROR
+            verifica += 1
+        else:
+            ddd.border_color = COLOR_BORDER_COLOR
+        ddd.update()
+
+        # Validação do campo de telefone
+        telefone_value = telefone.value.replace('-', "")
+        if telefone.value == "" or len(telefone_value) < 8 or len(telefone_value) > 9:
+            telefone.border_color = COLOR_BORDER_COLOR_ERROR
+            verifica += 1
+        else:
+            telefone.border_color = COLOR_BORDER_COLOR
+            telefone.error_text = None
+        telefone.update()
+
+        # Validação do checkbox de termos
         if not checkbox_termos.value:
             checkbox_termos.is_error = True
             verifica += 1
-            checkbox_termos.update()
         else:
             checkbox_termos.is_error = False
-            checkbox_termos.update()
+        checkbox_termos.update()
 
-        return True if verifica == 0 else None
+        return verifica == 0
 
+    # Criação do widget de registro de usuário
     _sign_in_ = UserWidget(
         "Registrar-se!",
         "Entre com os dados da sua conta abaixo",
@@ -465,11 +422,13 @@ async def main(page:flet.page):
         _login_user,
         _back_button,
     )
-    
+
+    # Configuração do contêiner principal e adição do widget de registro
     _sign_in_main = _main_column_()
     _sign_in_main.content.controls.append(flet.Container(padding=0))
     _sign_in_main.content.controls.append(_sign_in_)
-    
+
     add_page(_sign_in_main)
 
+# Se necessário, adicione a chamada para a função principal conforme o seu framework/ambiente
 # flet.app(target=main, assets_dir="assets", view=flet.WEB_BROWSER)

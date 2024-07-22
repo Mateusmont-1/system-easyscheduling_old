@@ -75,7 +75,7 @@ Para instalar e executar este projeto, siga os passos abaixo:
     pip install -r requirements.txt
     ```
 
-6. Configure suas credenciais do Firestore:
+6. Configure suas credenciais do Firestore e configuracações do sistema:
     - Crie um arquivo `.env` na raiz do projeto e adicione suas credenciais do Firestore. O arquivo `.env` deve conter:
       ```
       API_KEY=seu_id_api_whatsapp
@@ -91,5 +91,24 @@ Para instalar e executar este projeto, siga os passos abaixo:
       FIRESTORE_AUTH_PROVIDER_x509_CERT_URL=seu_auth_provider_cert_url
       FIRESTORE_CLIENT_x509_CERT_URL=seu_cliente_cert_url
       FIREBASE_UNIVERSE_DOMAIN=googleapis.com
+
+      TELEFONE_CONTACT=seu_telefone_contato
+      CONTACT_NAME=seu_nome_contato
+
+      URL_MAPS=seu_url_google_maps
+
+      FLET_PATH=/sistema_exemplo
+      
+      COLOR_BACKGROUND_PAGE=#303030
+      COLOR_BACKGROUND_CONTAINER=#0F0F0F
+      COLOR_BACKGROUND_BUTTON=#16181b
+      COLOR_BACKGROUND_TEXT_FIELD=#0F0F0F
+      COLOR_TEXT_BUTTON=#ccaf7e
+      COLOR_TEXT=#C0C0C0
+      COLOR_TEXT_IN_BUTTON=#ccaf7e
+      COLOR_TEXT_IN_DROPDOWN=#ccaf7e
+      COLOR_TEXT_IN_FIELD=#ccaf7e
+      COLOR_BORDER_COLOR=#ccaf7e
+      COLOR_BORDER_COLOR_ERROR=#FF0000
       ```
 

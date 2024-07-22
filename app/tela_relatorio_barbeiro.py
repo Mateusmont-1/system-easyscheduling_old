@@ -351,18 +351,33 @@ async def main(page:flet.page, user):
         if query_type == "0":
             # Consulta para ganhos diários
             query = transacoes_ref.where(filter=FieldFilter("colaborador_id", "==", colaborador_id)).where(filter=FieldFilter("data", "==", data_formatada))
+            transacoes = query.stream()
+            return list(transacoes)
+        
         elif query_type == "1":
             # Consulta para ganhos semanais
             data = datetime.datetime.strptime(data_formatada, "%d-%m-%Y")
             start_of_week = data - datetime.timedelta(days=data.weekday())
             end_of_week = start_of_week + datetime.timedelta(days=6)
-            
-            query = transacoes_ref.where(filter=FieldFilter("colaborador_id", "==", colaborador_id)).where(filter=FieldFilter("data", ">=", start_of_week.strftime("%d-%m-%Y"))).where(filter=FieldFilter("data", "<=", end_of_week.strftime("%d-%m-%Y")))
+            transacoes = []
+        
+            for i in range(7):
+                day = start_of_week + datetime.timedelta(days=i)
+                day_str = day.strftime("%d-%m-%Y")
+                daily_query = transacoes_ref.where(filter=FieldFilter("colaborador_id", "==", colaborador_id)).where(filter=FieldFilter("data", "==", day_str))
+                daily_transacoes = daily_query.stream()
+                transacoes.extend(list(daily_transacoes))
+                
+            return transacoes
+        
         elif query_type == "2":
             query = transacoes_ref.where(filter=FieldFilter("colaborador_id", "==", colaborador_id))
-
-        transacoes = query.stream()
-        return list(transacoes)
+            transacoes = query.stream()
+            return list(transacoes)
+        
+        else:
+            raise ValueError(f"Tipo de consulta {query_type} inválido")
+        
 
     # Atualiza a interface com os dados das transações e o total ganho
     def atualizar_interface(lista_transacoes, data_table):

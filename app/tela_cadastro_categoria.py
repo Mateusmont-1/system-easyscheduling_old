@@ -159,58 +159,32 @@ class UserWidget(flet.UserControl):
             ],
         )
 
-async def main(page:flet.page, user):
+async def main(page: flet.Page, user):
+    # Definindo o título da página
     page.title = "Cadastro categoria"
-    # page.bgcolor = "#f0f3f6"
-    # page.horizontal_alignment = "center"
-    # page.vertical_alignment = "center"
-    # page.theme_mode = "dark"
-
     page.clean()
     
+    # Função para ajustar o tamanho da página conforme a redimensionamento da janela
     def page_resize(e=None, inicio=None):
+        largura = min(page.width - 30, 600) if page.width <= 600 else 600
+        altura = min(page.height - 60, 600) if page.height <= 600 else 600
+
         if e:
-            if page.width > 600:     
-                largura = 600
-                _sign_in_main.width = largura
-                _sign_in_main.update()
-            else:
-                largura = page.width - 30
-                _sign_in_main.width = largura
-                _sign_in_main.update()
-            if page.height > 600:     
-                altura = 600
-                _sign_in_main.height = altura
-                _sign_in_main.update()
-            else:
-                altura = page.height - 60
-                _sign_in_main.height = altura
-                _sign_in_main.update()
+            _sign_in_main.width = largura
+            _sign_in_main.height = altura
+            _sign_in_main.update()
+        
+        if inicio is not None:
+            return largura if inicio else altura
 
-        # Inicio True retorna largura para _main_column
-        if inicio:
-            if page.width > 600:     
-                largura = 600
-                return largura
-            else:
-                largura = page.width - 30
-                return largura
-
-        # Inicio False retorna altura para _main_column    
-        elif inicio is False:
-            if page.height > 600:     
-                altura = 600
-                return altura
-            else:
-                altura = page.width - 60
-                return altura    
-    
+    # Associa a função de redimensionamento à janela
     page.window.on_resized = page_resize
-                
+
+    # Cria o contêiner principal da interface
     def _main_column_():
         return flet.Container(
-            width=page_resize(e=None, inicio=True),
-            height=page_resize(e=None, inicio=False),
+            width=page_resize(inicio=True),
+            height=page_resize(inicio=False),
             bgcolor=COLOR_BACKGROUND_CONTAINER,
             padding=12,
             border_radius=35,
@@ -220,40 +194,40 @@ async def main(page:flet.page, user):
                 horizontal_alignment="center",
             )
         )
-        
-        
+
+    # Função para adicionar um elemento à página
     def add_page(extruct):
         page.add(
             flet.Row(
                 alignment="center",
                 spacing=25,
-                controls=[
-                extruct,
-                ]
+                controls=[extruct]
             )
         )
 
+    # Função assíncrona para criar uma nova categoria
     async def _create_produto(e):
-            
         if verificar_campos():
-            
             nome = str(_sign_in_.controls[0].controls[2].controls[0].content.value)
-            
             checkbox_venda = _sign_in_._checkbox.content.controls[0].value
-
             cadastra_categoria = register_expenses.CreateCategory(nome, checkbox_venda)
             confirma = cadastra_categoria.criar_categoria()
+            
+            # Verifica se a categoria foi criada com sucesso
             if confirma:
                 texto = "Categoria cadastrada!"
                 await tela_transicao.main(page, user, texto)
             else:
-                nome = _sign_in_.controls[0].controls[3].controls[0].content
-                nome.error_text = "Este serviço já existe!"
-                nome.update()
-            
+                nome_input = _sign_in_.controls[0].controls[3].controls[0].content
+                nome_input.error_text = "Esta categoria já existe!"
+                nome_input.update()
+    
+    # Função para verificar se os campos obrigatórios estão preenchidos
     def verificar_campos():
         nome = _sign_in_.controls[0].controls[2].controls[0].content
         verificar = 0
+        
+        # Verifica se o campo nome está vazio
         if nome.value == "":
             nome.border_color = COLOR_BORDER_COLOR_ERROR
             verificar += 1
@@ -262,11 +236,13 @@ async def main(page:flet.page, user):
         
         nome.update()
         
-        return True if verificar == 0 else None
+        return verificar == 0
     
+    # Função assíncrona para voltar à página principal
     async def _back_button(e):
         await tela_menu_main.main(page, user)
-        
+    
+    # Cria o widget de cadastro de categoria
     _sign_in_ = UserWidget(
         "Adicionar categoria!",
         "Entre com os dados da categoria abaixo",
@@ -276,11 +252,12 @@ async def main(page:flet.page, user):
         _back_button,
     )
     
+    # Cria o contêiner principal e adiciona o widget de cadastro
     _sign_in_main = _main_column_()
     _sign_in_main.content.controls.append(flet.Container(padding=0))
     _sign_in_main.content.controls.append(_sign_in_)
     
     add_page(_sign_in_main)
 
-
+# Se necessário, adicione a chamada para a função principal conforme o seu framework/ambiente
 # flet.app(target=main, assets_dir="assets", view=flet.WEB_BROWSER) 

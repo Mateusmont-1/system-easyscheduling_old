@@ -257,60 +257,37 @@ class UserWidget(flet.UserControl):
             ],
         )
 
-async def main(page:flet.page, user):
+async def main(page: flet.Page, user):
     page.title = "Agendamento"
-    # page.bgcolor = "#f0f3f6"
-    # page.horizontal_alignment = "center"
-    # page.vertical_alignment = "center"
-    # page.theme_mode = "dark"
     page.clean()
-    
-    colaboradores_disponivel = dict()
-    horario_disponivel = list()
-    
+
+    colaboradores_disponivel = {}
+    horario_disponivel = []
+
     db = get_firestore_client()
-    service_ref = db.collection("servico").stream()
     user_id = user['localId']
     user_ref = db.collection("usuarios").document(user_id)
-    
     doc_user = user_ref.get().to_dict()
-    
+
     name_user = doc_user['nome']
-    phone_user = doc_user['telefone']    
-        
-    def _on_date_change(e=None):
-        # Aqui você pode adicionar a lógica para buscar os horários disponíveis
-        # para a data selecionada e atualizar o dropdown de horários
+    phone_user = doc_user['telefone']
+
+    async def _on_date_change(e=None):
         _scheduling_.hour_choose.visible = True
-        _scheduling_.hour_choose.update()
         _scheduling_.collaborator_choose.visible = True
-        _scheduling_.collaborator_choose.update()
         hour_choose = _scheduling_.hour_choose.content
         collaborator_choose = _scheduling_.collaborator_choose.content
         hour_choose.value = None
-        hour_choose.update()
         collaborator_choose.value = None
-        collaborator_choose.update()
-        if e:
-            selected_date = e.control.value
-        else:
-            selected_date = _scheduling_.date_picker.content.value
-
-        data_objeto = datetime.datetime.strptime(str(selected_date), '%Y-%m-%d %H:%M:%S')
-
-        data_formatada = data_objeto.strftime('%d-%m-%Y')
-
-        # print(f"Data selecionada: {data}")
-        # verifica_horario(data_formatada)
-        asyncio.run(verifica_horario(data_formatada))
+        selected_date = e.control.value if e else _scheduling_.date_picker.content.value
+        data_formatada = datetime.datetime.strptime(str(selected_date), '%Y-%m-%d %H:%M:%S').strftime('%d-%m-%Y')
+        await verifica_horario(data_formatada)
 
     def _service_change(e):
         _scheduling_.day_choose.visible = True
-        _scheduling_.day_choose.update()
-        
-        if _scheduling_.date_picker.content.value != None:
-            _on_date_change()
-    
+        if _scheduling_.date_picker.content.value:
+            asyncio.create_task(_on_date_change())
+
     def string_to_time(time_str):
         return datetime.datetime.strptime(time_str, '%H:%M')
 
@@ -339,49 +316,32 @@ async def main(page:flet.page, user):
                 horario_agendado = string_to_time(horario_agendado_str)
                 duracao_agendada = datetime.timedelta(minutes=int(agendamento_data['duracao_servico']))
                 fim_agendado = horario_agendado + duracao_agendada
-            
-                if (inicio < fim_agendado and fim > horario_agendado):
+                if inicio < fim_agendado and fim > horario_agendado:
                     return False
         return True
 
     async def processa_colaborador(colaborador, data_formatada, dia_atual, mes_atual, hora_atual, duracao_servico, agendamentos):
         dados = colaborador.to_dict()
-        # Usa uma lista vazia se 'dias_folga' não existir
         dias_folga = dados.get('dias_folga', [])  
-        # Obtém "dias_trabalhados" ou define todos os dias da semana
         dias_trabalhados = dados.get('dias_trabalhados', [0, 1, 2, 3, 4, 5, 6])
         if dados['permitir_agendamento'] and data_formatada not in dias_folga:
             id = colaborador.id
             dia, mes, ano = map(int, data_formatada.split("-"))
             data = datetime.date(year=ano, month=mes, day=dia)
             dia_semana = data.weekday()
-
-            # Verifica se o dia da semana está em "dias_trabalhados"
             if dia_semana not in dias_trabalhados:
                 return
 
-            if dia_semana < 5:
-                horarios_disponiveis = dados['dias_uteis']
-            elif dia_semana == 5:
-                horarios_disponiveis = dados['sabado']
-            else:
-                horarios_disponiveis = dados['domingo']
-            
+            horarios_disponiveis = dados['dias_uteis'] if dia_semana < 5 else dados['sabado'] if dia_semana == 5 else dados['domingo']
             for hora in horarios_disponiveis:
-                if len(horarios_disponiveis) <= 1:
+                if len(horarios_disponiveis) <= 1 or (dia == dia_atual and mes == mes_atual and hora < hora_atual):
                     continue
-                if dia == dia_atual and mes == mes_atual:
-                    if hora < hora_atual:
-                        continue
-                    
+
                 inicio_servico = string_to_time(hora)
                 fim_servico = inicio_servico + duracao_servico
                 if periodo_disponivel(inicio_servico, fim_servico, agendamentos.get(id, [])):
                     if id not in colaboradores_disponivel:
-                        colaboradores_disponivel[id] = {
-                            "nome": dados["nome"],
-                            "horarios_disponivel": []
-                        }
+                        colaboradores_disponivel[id] = {"nome": dados["nome"], "horarios_disponivel": []}
                     colaboradores_disponivel[id]["horarios_disponivel"].append(hora)
                     if hora not in horario_disponivel:
                         horario_disponivel.append(hora)
@@ -391,57 +351,37 @@ async def main(page:flet.page, user):
         colaborador_documents = db.collection("colaborador").stream()
         service_choose = _scheduling_.service_choose.content
         service_dict = _scheduling_.service_dict[service_choose.value]
-        
+
         hour_choose = _scheduling_.hour_choose.content
         hour_choose.options.clear()
-        hour_choose.update()
         collaborator_choose = _scheduling_.collaborator_choose.content
         collaborator_choose.options.clear()
-        collaborator_choose.update()
 
         duracao_servico = datetime.timedelta(minutes=service_dict['duracao'])
         
         data_atual = datetime.datetime.now()
         dia_atual = data_atual.day
         mes_atual = data_atual.month
-        hora_atual_old = datetime.datetime.now()
-        hora_atual = hora_atual_old.strftime('%H:%M')
+        hora_atual = data_atual.strftime('%H:%M')
         
         colaboradores_disponivel.clear()
         horario_disponivel.clear()
 
-        # Consulta agregada para buscar todos os agendamentos de uma vez
         agendamentos = get_agendamentos(data_formatada)
         
-        tasks = []
-        for colaborador in colaborador_documents:
-            tasks.append(processa_colaborador(colaborador, data_formatada, dia_atual, mes_atual, hora_atual, duracao_servico, agendamentos))
-        
+        tasks = [processa_colaborador(colaborador, data_formatada, dia_atual, mes_atual, hora_atual, duracao_servico, agendamentos) for colaborador in colaborador_documents]
         await asyncio.gather(*tasks)
         
-        if colaboradores_disponivel:
-            hour_choose.options.clear()
-            for hora in horario_disponivel:
-                hour_choose.options.append(flet.dropdown.Option(hora))
-        else:
-            hour_choose.options.clear()
-            hour_choose.options.append(flet.dropdown.Option("Não possui horário disponivel"))
-            hour_choose.value = "Não possui horário disponivel"
-        
+        hour_choose.options = [flet.dropdown.Option(hora) for hora in horario_disponivel] if colaboradores_disponivel else [flet.dropdown.Option("Não possui horário disponivel")]
         hour_choose.update()
 
     def verifica_colaborador(e):
         horario_escolhido = e.control.value
         collaborator_choose = _scheduling_.collaborator_choose.content
-        collaborator_choose.options.clear()
-        for id, dados in colaboradores_disponivel.items():
-            if horario_escolhido in dados["horarios_disponivel"]:
-                collaborator_choose.options.append(flet.dropdown.Option(text=dados['nome'], key=id))
+        collaborator_choose.options = [flet.dropdown.Option(text=dados['nome'], key=id) for id, dados in colaboradores_disponivel.items() if horario_escolhido in dados["horarios_disponivel"]]
         collaborator_choose.update()
 
     async def agendar_corte(e):
-        
-        # Obtendo valores preenchidos na interface
         name_user = _scheduling_.controls[0].controls[1].controls[0].content
         phone_user = _scheduling_.controls[0].controls[1].controls[1].content
         service_choose = _scheduling_.service_choose.content
@@ -452,16 +392,9 @@ async def main(page:flet.page, user):
 
         if verifica:
             service_dict = _scheduling_.service_dict[service_choose.value]
-            # Formatando a data 
-            data_formact = datetime.datetime.strptime(str(day_choose), '%Y-%m-%d %H:%M:%S')
-        # Agora, formate a data no formato 'dia-mes-ano'
-            day_choose = data_formact.strftime('%d-%m-%Y')   
+            day_choose = datetime.datetime.strptime(str(day_choose), '%Y-%m-%d %H:%M:%S').strftime('%d-%m-%Y')
 
-            scheduling = scheduling_db.Scheduling(user,
-                                                        name_user.value, phone_user.value,
-                                                        service_choose.value, day_choose,
-                                                        hour_choose.value, collaborator_choose.value,
-                                                        service_dict)
+            scheduling = scheduling_db.Scheduling(user, name_user.value, phone_user.value, service_choose.value, day_choose, hour_choose.value, collaborator_choose.value, service_dict)
             _scheduling = scheduling.create_scheduling()
 
             texto = "Agendamento realizado!"
@@ -469,108 +402,45 @@ async def main(page:flet.page, user):
             type_message = "novo_agendamento"
 
             mensagem = whatsapp.MessageSender()
-            mensagem_enviada = mensagem.send_message(phone_user.value, name_user.value,
-                                                    day_choose, hour_choose.value,
-                                                    name_collaborator, type_message)
-            mensagem_contato = mensagem.send_contact(phone_user.value, TELEFONE_CONTACT)
+            mensagem.send_message(phone_user.value, name_user.value, day_choose, hour_choose.value, name_collaborator, type_message)
+            mensagem.send_contact(phone_user.value, TELEFONE_CONTACT)
 
             await tela_transicao.main(page, user, texto)
-        
-    def verifica_campos(name , phone, service_choose, hour_choose,collaborator_choose):
-        verifica = 0
 
-        phone_correto = phone.value.replace('-', "").replace("(", ""). replace(")", "")
-        if name.value == "":
-            name.border_color = '#FF0000'
-            name.update()
-            verifica += 1
-        else:
-            name.border_color = "#f0f3f6"
-            name.update()
-
-        if phone.value == "":
-            phone.border_color = '#FF0000'
-            phone.update()
-            verifica += 1
-        elif len(phone_correto) < 10 or len(phone_correto) > 11:
-            phone.border_color = '#FF0000'
-            phone.update()
-            verifica += 1
-        else:
-            phone.border_color = "#f0f3f6"
-            phone.error_text = None
-            phone.update()
-        if service_choose.value == None or service_choose.value == "":
-            service_choose.border_color = '#FF0000'
-            service_choose.update()
-            verifica +=1
-        else:
-            service_choose.border_color = "#f0f3f6"
-            service_choose.update()
-            
-        if collaborator_choose.value == None or collaborator_choose.value == "":
-            collaborator_choose.border_color = '#FF0000'
-            collaborator_choose.update()
-            verifica += 1
-        else:
-            collaborator_choose.border_color = "#f0f3f6"
-            collaborator_choose.update()
-            
-        if hour_choose.value == None or hour_choose.value == "":
-            hour_choose.border_color = '#FF0000'
-            hour_choose.update()
-        else:
-            hour_choose.border_color = "#f0f3f6"
-            hour_choose.update()
+    def verifica_campos(name, phone, service_choose, hour_choose, collaborator_choose):
+        phone_correto = phone.value.replace('-', "").replace("(", "").replace(")", "")
+        name.border_color = '#FF0000' if not name.value else "#f0f3f6"
+        phone.border_color = '#FF0000' if not phone.value or not (10 <= len(phone_correto) <= 11) else "#f0f3f6"
+        service_choose.border_color = '#FF0000' if not service_choose.value else "#f0f3f6"
+        collaborator_choose.border_color = '#FF0000' if not collaborator_choose.value else "#f0f3f6"
+        hour_choose.border_color = '#FF0000' if not hour_choose.value else "#f0f3f6"
         
-        return True if verifica == 0 else None
+        name.update()
+        phone.update()
+        service_choose.update()
+        collaborator_choose.update()
+        hour_choose.update()
+        
+        return all([name.value, phone.value, 10 <= len(phone_correto) <= 11, service_choose.value, collaborator_choose.value, hour_choose.value])
 
     async def return_page(e):
-        await tela_menu_main.main(page,user)
+        await tela_menu_main.main(page, user)
         
     def page_resize(e=None, inicio=None):
+        largura = min(page.width - 30, 600) if page.width > 600 else page.width - 30
+        altura = min(page.height - 60, 600) if page.height > 600 else page.height - 60
         if e:
-            if page.width > 600:     
-                largura = 600
-                _scheduling_.width = largura
-                _scheduling_.update()
-            else:
-                largura = page.width - 30
-                _scheduling_.width = largura
-                _scheduling_.update()
-            if page.height > 600:     
-                altura = 600
-                _scheduling_.height = altura
-                _scheduling_.update()
-            else:
-                altura = page.height - 60
-                _scheduling_.height = altura
-                _scheduling_.update()
+            _scheduling_.width, _scheduling_.height = largura, altura
+            _scheduling_.update()
+        if inicio is not None:
+            return largura if inicio else altura
 
-        # Inicio True retorna largura para _main_column
-        if inicio:
-            if page.width > 600:     
-                largura = 600
-                return largura
-            else:
-                largura = page.width - 30
-                return largura
-
-        # Inicio False retorna altura para _main_column    
-        elif inicio is False:
-            if page.height > 600:     
-                altura = 600
-                return altura
-            else:
-                altura = page.width - 60
-                return altura    
-    
     page.window.on_resized = page_resize
-                
-    def _main_column_():
+
+    def _main_column():
         return flet.Container(
-            width=page_resize(e=None, inicio=True),
-            height=page_resize(e=None, inicio=False),
+            width=page_resize(inicio=True),
+            height=page_resize(inicio=False),
             bgcolor=COLOR_BACKGROUND_CONTAINER,
             padding=12,
             border_radius=35,
@@ -582,21 +452,13 @@ async def main(page:flet.page, user):
         )
         
     def add_page(extruct):
-        page.add(
-            flet.Row(
-                alignment="center",
-                spacing=25,
-                controls=[
-                extruct,
-                ]
-            )
-        )
-        
+        page.add(flet.Row(alignment="center", spacing=25, controls=[extruct]))
+
     _scheduling_ = UserWidget(
         "Agendamento!",
         name_user,
         phone_user,
-        service_ref,
+        db.collection("servico").stream(),
         _on_date_change,
         verifica_colaborador,
         agendar_corte,
@@ -604,9 +466,7 @@ async def main(page:flet.page, user):
         _service_change,
     )
     
-
-    
-    _scheduling_main = _main_column_()
+    _scheduling_main = _main_column()
     _scheduling_main.content.controls.append(flet.Container(padding=0))
     _scheduling_main.content.controls.append(_scheduling_)
     
