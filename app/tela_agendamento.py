@@ -275,16 +275,20 @@ async def main(page: flet.Page, user):
     async def _on_date_change(e=None):
         _scheduling_.hour_choose.visible = True
         _scheduling_.collaborator_choose.visible = True
+        _scheduling_.update()
         hour_choose = _scheduling_.hour_choose.content
         collaborator_choose = _scheduling_.collaborator_choose.content
         hour_choose.value = None
         collaborator_choose.value = None
+        hour_choose.update()
+        collaborator_choose.update()
         selected_date = e.control.value if e else _scheduling_.date_picker.content.value
         data_formatada = datetime.datetime.strptime(str(selected_date), '%Y-%m-%d %H:%M:%S').strftime('%d-%m-%Y')
         await verifica_horario(data_formatada)
 
     def _service_change(e):
         _scheduling_.day_choose.visible = True
+        _scheduling_.update()
         if _scheduling_.date_picker.content.value:
             asyncio.create_task(_on_date_change())
 
